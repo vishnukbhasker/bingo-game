@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bingo Game</title>
+  <style>
+body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f8ff;
+      flex-direction: column;
+      text-align: center;
+    }
+    .container {
+      display: flex;
+      justify-content: space-between;
+      width: 90%;
+      max-width: 1200px;
+      height: 80vh;
+      align-items: center;
+      gap: 20px;
+    }
+ 
+    #left-questions, #center-questions {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      width: 200px;
+      max-height: 90%;
+      overflow-y: auto;
+    }
+    .question {
+      margin: 8px 0;
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+    }
+    #bingo-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 300px;
+      max-width: 100%;
+    }
+    #bingo-board {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      width: 100%;
+      max-width: 300px;
+      margin-top: 20px;
+    }
+    .cell {
+      width: 50px;
+      height: 50px;
+      background-color: #4CAF50;
+      border: 2px solid #fff;
+      font-size: 18px;
+      line-height: 50px;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .cell.revealed {
+      background-color: #ffeb3b;
+      color: black;
+    }
+    #bingo-status {
+      margin-top: 15px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #d32f2f;
+    }
+    #score, #timer {
+      margin-top: 10px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+    input, button {
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 2px solid #4CAF50;
+      background-color: #fff;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:disabled {
+      background-color: #f0f0f0;
+      cursor: not-allowed;
+    }
+    button:hover:not(:disabled) {
+      background-color: #4CAF50;
+      color: white;
+    }
+    #start-btn {
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      font-size: 18px;
+      padding: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #start-btn:hover {
+      background-color: #1976D2;
+    }
+
+#participant-info {
+position: absolute;
+      top: 5px;
+      left: 10px;
+
+  margin-bottom: 20px; /* Adds space below the input box */
+  text-align: left;  /* Centers the label and input */
+  width: 100%;         /* Ensures it adjusts to the container */
+}
+
+#participant-name {
+  width: 80%;          /* Makes the input box width dynamic */
+  max-width: 300px;    /* Sets a maximum width for the input box */
+  padding: 10px;       /* Adds padding for better visibility */
+  font-size: 16px;     /* Makes the text in the box readable */
+  margin-top: 10px;    /* Space above the box */
+  border-radius: 5px;  /* Smooth corners */
+  border: 1px solid #ccc;
+  box-sizing: border-box; /* Ensures padding doesn’t affect width */
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="left-questions">
+      <h3>Questions (1-12)</h3>
+      <div id="questions-left"></div>
+    </div>
+    <div id="bingo-container">
+<div id="participant-info">
+<label for="participant-name" style="font-size: 16px; font-weight: bold; color: #333;">Participant Name:</label>
+  <input
+    type="text"
+    id="participant-name"
+    placeholder="Enter your name"
+    style="margin-top: 5px; padding: 8px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc;"
+  />
+  <p id="name-warning" style="color: red; font-size: 14px; display: none;">Please enter your name before starting!</p>
+</div>
+      <div id="bingo-status">BINGO: </div>
+      <div id="bingo-board"></div>
+      <input type="text" id="answer" placeholder="Enter question number and answer (e.g., 2: Paris)" disabled />
+      <button onclick="submitAnswer()" disabled>Submit Answer</button>
+      <div id="timer">Elapsed Time: 0 seconds</div>
+      <div id="score">Score: 0</div>
+      <button id="start-btn" onclick="startGame()">Start</button>
+    </div>
+    <div id="center-questions">
+      <h3>Questions (13-25)</h3>
+      <div id="questions-center"></div>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      { number: 1, question: "What is 2 + 2?", answer: "4" },
+      { number: 2, question: "Capital of Japan?", answer: "tokyo" },
+      { number: 3, question: "What is 5 * 5?", answer: "25" },
+      { number: 4, question: "Largest planet in our solar system?", answer: "jupiter" },
+      { number: 5, question: "What is 15 / 3?", answer: "5" },
+      { number: 6, question: "Capital of Germany?", answer: "berlin" },
+      { number: 7, question: "What is 10 - 7?", answer: "3" },
+      { number: 8, question: "Fastest land animal?", answer: "cheetah" },
+      { number: 9, question: "How many continents are there?", answer: "7" },
+      { number: 10, question: "Square root of 64?", answer: "8" },
+      { number: 11, question: "Capital of USA?", answer: "washington" },
+      { number: 12, question: "What is 3 * 7?", answer: "21" },
+      { number: 13, question: "Smallest prime number?", answer: "2" },
+      { number: 14, question: "Capital of Italy?", answer: "rome" },
+      { number: 15, question: "What is 50 - 25?", answer: "25" },
+      { number: 16, question: "What is 10 * 2?", answer: "20" },
+      { number: 17, question: "Capital of Australia?", answer: "canberra" },
+      { number: 18, question: "What is 81 / 9?", answer: "9" },
+      { number: 19, question: "Largest ocean on Earth?", answer: "pacific" },
+      { number: 20, question: "What is 7 * 6?", answer: "42" },
+      { number: 21, question: "Capital of Canada?", answer: "ottawa" },
+      { number: 22, question: "What is 100 / 4?", answer: "25" },
+      { number: 23, question: "Smallest country in the world?", answer: "vatican" },
+      { number: 24, question: "Capital of Spain?", answer: "madrid" },
+      { number: 25, question: "What is 12 + 13?", answer: "25" }
+    ];
+
+    let bingoWord = ""; 
+    let score = 0;
+    const board = document.getElementById("bingo-board");
+    const leftQuestions = document.getElementById("questions-left");
+    const centerQuestions = document.getElementById("questions-center");
+    const bingoStatus = document.getElementById("bingo-status");
+    const timerDisplay = document.getElementById("timer");
+    const rowsCompleted = Array(5).fill(false);
+    const colsCompleted = Array(5).fill(false);
+    const scoreDisplay = document.getElementById("score");
+let blocksRevealed = 0; // Initialize blocks revealed counter
+ const blocksRevealedDisplay = document.createElement("div"); // Create display for revealed blocks
+ blocksRevealedDisplay.id = "blocks-revealed";
+ blocksRevealedDisplay.style.marginTop = "10px";
+ blocksRevealedDisplay.style.fontSize = "20px";
+ blocksRevealedDisplay.style.fontWeight = "bold";
+ blocksRevealedDisplay.style.color = "#333";
+ blocksRevealedDisplay.innerText = `Blocks Revealed: 0`;
+ document.getElementById("bingo-container").appendChild(blocksRevealedDisplay);
+
+    let startTime = Date.now(); 
+    let timerInterval;
+    let gameStarted = false;
+
+function startGame() {
+  const participantName = document.getElementById("participant-name").value.trim();
+  const nameWarning = document.getElementById("name-warning");
+
+  if (!participantName) {
+    nameWarning.style.display = "block"; // Show warning if the name is not entered
+    return;
+  }
+
+  nameWarning.style.display = "none"; // Hide warning if the name is valid
+  gameStarted = true;
+  document.getElementById("start-btn").disabled = true;
+document.getElementById("answer").disabled = false;
+document.querySelector("button[onclick='submitAnswer()']").disabled = false;
+  startTime = Date.now();
+  startTimer();
+
+  alert(`Welcome, ${participantName}! Good luck with the game.`);
+}
+
+function startTimer() {
+  timerInterval = setInterval(() => {
+      const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+
+      if (elapsedTime >= 60) {
+          stopTimer(true); // End the game because the timer reached 60 seconds
+      } else {
+          timerDisplay.innerText = `Elapsed Time: ${elapsedTime} seconds`;
+      }
+  }, 1000);
+}
+
+    
+
+function stopTimer(timerExpired = false) {
+  clearInterval(timerInterval); // Stop the interval
+
+  const totalTime = Math.floor((Date.now() - startTime) / 1000);
+  const participantName = document.getElementById("participant-name").value.trim();
+
+  if (timerExpired) {
+      alert(`Time's up! The game ended after 60 seconds.`);
+  } else {
+      alert(`Game Over! You achieved BINGO in ${totalTime} seconds.`);
+  }
+
+  // Send game data to the server
+  const data = {
+      participant_name: participantName,
+      time_taken: totalTime,
+      score: score,
+      bingo_word: bingoWord,
+  };
+
+  fetch("http://localhost/save_results.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(data).toString(),
+  })
+      .then((response) => response.text())
+      .then((data) => console.log(data))
+      .catch((error) => console.error("Error:", error));
+}
+
+    
+  
+  
+    
+
+    for (let i = 1; i <= 25; i++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      cell.innerText = "❓"; 
+      cell.dataset.number = i;
+      board.appendChild(cell);
+    }
+
+    questions.slice(0, 12).forEach(q => {
+      const questionElement = document.createElement("p");
+      questionElement.classList.add("question");
+      questionElement.innerText = `${q.number}. ${q.question}`;
+      leftQuestions.appendChild(questionElement);
+    });
+
+    questions.slice(12).forEach(q => {
+      const questionElement = document.createElement("p");
+      questionElement.classList.add("question");
+      questionElement.innerText = `${q.number}. ${q.question}`;
+      centerQuestions.appendChild(questionElement);
+    });
+
+    function submitAnswer() {
+      if (!gameStarted) {
+        alert("Please start the game first!");
+        return;
+      }
+
+      const userInput = document.getElementById("answer").value.trim();
+      const [num, userAnswer] = userInput.split(":").map(s => s.trim());
+      if (!num || !userAnswer || isNaN(num)) {
+        alert("Please enter the question number and your answer in the format 'number: answer'");
+        return;
+      }
+      const question = questions.find(q => q.number === parseInt(num));
+      if (question && userAnswer.toLowerCase() === question.answer) {
+        revealNumber(question.number);
+        incrementScore();
+        document.getElementById("answer").value = ""; 
+        checkBingo();
+      } else {
+        alert("Wrong answer. Try again!");
+      }
+    }
+
+    function incrementScore() {
+      score += 2;
+      scoreDisplay.innerText = `Score: ${score}`;
+    }
+
+function revealNumber(num) {
+   const cells = document.querySelectorAll(".cell");
+   cells.forEach(cell => {
+     if (parseInt(cell.dataset.number) === num && !cell.classList.contains("revealed")) {
+       cell.classList.add("revealed");
+       cell.innerText = num;
+       blocksRevealed++; // Increment the counter
+       updateBlocksRevealed(); // Update the display
+     }
+   });
+ }
+
+ function updateBlocksRevealed() {
+   blocksRevealedDisplay.innerText = `Blocks Revealed: ${blocksRevealed}`;
+ }
+
+    function checkBingo() {
+      const cells = document.querySelectorAll(".cell");
+      const rows = Array(5).fill(0);
+      const cols = Array(5).fill(0);
+
+      cells.forEach((cell, index) => {
+        if (cell.classList.contains("revealed")) {
+          const row = Math.floor(index / 5);
+          const col = index % 5;
+          rows[row]++;
+          cols[col]++;
+        }
+      });
+
+      rows.forEach((count, rowIndex) => {
+        if (count === 5 && !rowsCompleted[rowIndex]) {
+          addBingoLetter();
+          rowsCompleted[rowIndex] = true;
+        }
+      });
+
+      cols.forEach((count, colIndex) => {
+        if (count === 5 && !colsCompleted[colIndex]) {
+          addBingoLetter();
+          colsCompleted[colIndex] = true;
+        }
+      });
+    }
+
+    function addBingoLetter() {
+      const bingoLetters = "BINGO";
+      if (bingoWord.length < bingoLetters.length) {
+        bingoWord += bingoLetters[bingoWord.length];
+        bingoStatus.innerText = `BINGO: ${bingoWord}`;
+      }
+      if (bingoWord === "BINGO") {
+        stopTimer();
+        document.querySelectorAll(".cell").forEach(cell => (cell.style.pointerEvents = "none"));
+      }
+    }
+  </script>
+</body>
+</html>
