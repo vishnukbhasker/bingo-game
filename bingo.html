@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bingo Game</title>
@@ -170,6 +172,10 @@ position: absolute;
   </div>
 
   <script>
+    const supabaseUrl = "https://uinlymtzhhvfngekgsrj.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpbmx5bXR6aGh2Zm5nZWtnc3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM5MTA0NzksImV4cCI6MjA0OTQ4NjQ3OX0.PcIQh-wLpXIW0_1BXq-1Pg0rMALLg5_1SDz5YlH27Gw";
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
     const questions = [
       { number: 1, question: "What is 2 + 2?", answer: "4" },
       { number: 2, question: "Capital of Japan?", answer: "tokyo" },
@@ -254,10 +260,27 @@ function startTimer() {
   }, 1000);
 }
 
+async function saveResult(data) {
+  try {
+      const { error } = await supabase
+          .from('results') // Ensure this matches your Supabase table name
+          .insert(data);
+
+      if (error) {
+          console.error('Error saving result:', error);
+      } else {
+          console.log('Result saved successfully');
+      }
+  } catch (err) {
+      console.error('Unexpected error:', err);
+  }
+}
+
+
     
 
 function stopTimer(timerExpired = false) {
-  clearInterval(timerInterval); // Stop the interval
+  clearInterval(timerInterval); // Stop the timer
 
   const totalTime = Math.floor((Date.now() - startTime) / 1000);
   const participantName = document.getElementById("participant-name").value.trim();
@@ -268,7 +291,6 @@ function stopTimer(timerExpired = false) {
       alert(`Game Over! You achieved BINGO in ${totalTime} seconds.`);
   }
 
-  // Send game data to the server
   const data = {
       participant_name: participantName,
       time_taken: totalTime,
@@ -276,15 +298,11 @@ function stopTimer(timerExpired = false) {
       bingo_word: bingoWord,
   };
 
-  fetch("http://localhost/save_results.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams(data).toString(),
-  })
-      .then((response) => response.text())
-      .then((data) => console.log(data))
-      .catch((error) => console.error("Error:", error));
+  saveResult(data); // Save the game results to Supabase
 }
+
+
+
 
     
   
